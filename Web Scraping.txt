@@ -8,7 +8,7 @@
 #shell('docker run -d -p 4445:4444 selenium/standalone-firefox')
 ##
 ## Don't forget to get the image running on Docker, before running
-## the code. :)
+## the code.
 ##
 ## HTTP error 429: A security measure for preventing brute force
 ## attacks. Stop what you are doing and wait 1-2 hours, to reset
