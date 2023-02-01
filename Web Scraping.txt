@@ -1,0 +1,142 @@
+#######################################################################
+## WARNING!!! In order to run this program, Docker must be installed 
+## locally on your PC. Find your version on:
+## https://docs.docker.com/engine/install/
+##
+## Pull the browser image and allocate the port (run once in R):
+## (container port 4444, host port 4445, browser: Firefox)
+#shell('docker run -d -p 4445:4444 selenium/standalone-firefox')
+##
+## Don't forget to get the image running on Docker, before running
+## the code. :)
+##
+## HTTP error 429: A security measure for preventing brute force
+## attacks. Stop what you are doing and wait 1-2 hours, to reset
+## the timer, or simply reset the router and get a new IP that
+## will give you access once more.
+##
+## HTTP error 500: Restart Docker image and you are golden. :)
+#######################################################################
+
+#######################################################################
+## Packages to install:
+##=====================================================================
+# install.packages('RSelenium')
+# install.packages('stringr')
+# install.packages('rvest')
+# install.packages('XML')
+#######################################################################
+
+#######################################################################
+## Libraries to load:
+##=====================================================================
+library(RSelenium)
+library(stringr)
+library(rvest)
+library(XML)
+#######################################################################
+
+#######################################################################
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## Running our code:
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#######################################################################
+##=====================================================================
+## Selecting all the jobs from a country:
+##=====================================================================
+## The Maximum Number of jobs per term searched per country will be 150
+## because scrolling down stops at 150.
+#######################################################################
+## Select the Country and the Search Term:
+country <- "England"
+Term.Searched <- "Data Scientist"
+
+linkedin.search <- function(country, Term.Searched){
+
+ ## Start the remote driver locally with Firefox as a browser and a default (host) port number:
+ remDr <- remoteDriver(remoteServerAddr = "localhost", port = 4445L, browserName = "firefox")
+
+ ## Open the Server Connection:
+ remDr$open()
+
+ ## Create the URL (%22: Double Quotes, %20: Space):
+ url <- paste("https://www.linkedin.com/jobs/search?keywords=%22", Term.Searched, "%22&location=", country, "&position=1&pageNum=0", sep = "")
+
+ ## Navigate to the LinkedIn webpage:
+ remDr$navigate(url)
+
+ ## Scroll down 5 times, waiting for the page to load at each time:
+ for(i in 1:5){      
+	remDr$executeScript(paste("scroll(0,",i*10000,");"))
+	Sys.sleep(1)    
+ }
+
+ ## Parse the output:
+ parse <- XML::htmlParse(remDr$getPageSource()[[1]])
+
+ ## Retrieve all the links:
+ links <- xpathSApply(parse, path="//a", xmlGetAttr, "href")
+
+ ## Select only the job advertisements:
+ links <- links[grepl("result_search-card", links)]
+
+ ##==================================================================
+ ## Go through job descriptions and detect the software of interest:
+ ##==================================================================
+ ## Pre-allocate space for a data frame:
+ rownum <- length(links)
+ colnum <- 39
+ df <- data.frame(matrix(ncol = colnum, nrow = rownum))
+ colnames(df) <- c("R", "Python", "SAS", "MATLAB", "Stata", "Eviews", 
+                "Minitab", "SPSS", "Winbugs/Openbugs", "JAGS", "Stan",
+                "SQL", "C/C++", "Rust", "Tableau", "PowerBI", "Alteryx",
+                "Hadoop", "Spark", "Scala", "SAP", "Qlik", "Hive", "Julia",
+                "Spotfire", "JMP", "VBA", "Java", "MS Access", "MS Excel",        
+                "MS Azure", "AWS", "Git", "ElasticSearch", "KNIME", 
+                "Seniority Level", "Industry", "Country", "Term Searched")
+
+ ## The pattern searching vector (the search is case-space-sensitive):
+ programs <- c("\\bR\\b", "\\bPYTHON\\b|\\bPython\\b|\\bpython\\b", "\\bSAS\\b|\\bSas\\b", "\\bMATLAB\\b|\\bMatlab\\b|\\bmatlab\\b", 
+              "\\bSTATA\\b|\\bStata\\b|\\bstata\\b", "\\bEVIEWS\\b|\\bEViews\\b|\\bEviews\\b|\\beviews\\|\\bE-VIEWS\\b|\\bE-Views\\b|\\bE-views\\b|\\be-views\\b", 
+              "\\bMINITAB\\b|\\bMinitab\\b|\\bminitab\\b", "\\bSPSS\\b|\\bSpss\\b|\\bspss\\b", 
+              "\\bWINBUGS\\b|\\bWinbugs\\b|\\bwinbugs\\b|\\bWinBUGS\\b|\\bwinBUGS\\b|\\bOPENBUGS\\b|\\bOpenbugs\\b|\\bopenbugs\\b|\\bopenBUGS\\b", 
+              "\\bJAGS\\b|\\bJags\\b|\\bjags\\b", "\\bSTAN\\b|\\bStan\\b|\\bstan\\b", "\\bSQL\\b|\\bSql\\b|\\bsql\\b", "\\bC++\\b|\\bc++\\b|\\bC\\b", 
+              "\\bRUST\\b|\\bRust\\b|\\brust\\b", "\\bTABLEAU\\b|\\bTableau\\b|\\btableau\\b", 
+              "\\bPOWERBI\\b|\\bPowerBI\\b|\\bpowerBI\\b|\\bPOWER BI\\b|\\bPower BI\\b|\\bpower BI\\b|\\bPower bi\\b|\\bpower bi\\b", 
+              "\\bALTERYX\\b|\\bAlteryx\\b|\\balteryx\\b", "\\bHADOOP\\b|\\bHadoop\\b|\\bhadoop\\b", "\\bSPARK\\b|\\bSpark\\b|\\bspark\\b", 
+              "\\bSCALA\\b|\\bScala\\b|\\bscala\\b", "\\bSAP\\b|\\bSap\\b|\\bsap\\b", "\\bQLIK\\b|\\bQlik\\b|\\bqlik\\b", "\\bHIVE\\b|\\bHive\\b|\\bhive\\b", 
+              "\\bJULIA\\b|\\bJulia\\b|\\bjulia\\b", "\\bSPOTFIRE\\b|\\bSpotfire\\b|\\bSpotFire\\b|\\bspotfire\\b", "\\bJMP\\b|\\bJmp\\b|\\bjmp\\b", 
+              "\\bVBA\\b|\\bVba\\b|\\bvba\\b", "\\bJAVA\\b|\\bJava\\b|\\bjava\\b", "\\bACCESS\\b|\\bAccess\\b|\\baccess\\b", "\\bEXCEL\\b|\\bExcel\\b|\\bexcel\\b",        
+              "\\bAZURE\\b|\\bAzure\\b|\\bazure\\b", "\\bAWS\\b|\\bAws\\b|\\baws\\b", "\\bGIT\\b|\\bGit\\b|\\bgit\\b", 
+              "\\bELASTICSEARCH\\b|\\bElasticSearch\\b|\\bElasticsearch\\b|\\belasticsearch\\b|\\bELASTIC SEARCH\\b|\\bElastic Search\\b|\\bElastic search\\b|\\belastic search\\b", 
+              "\\bKNIME\\b|\\bKnime\\b|\\bknime\\b")
+
+ for (i in 1:length(links)){
+    h <- read_html(links[[i]])
+    out <- h%>%html_element("head")%>%html_nodes("script")%>%html_text()
+    df[i,1:35] <- as.numeric(str_detect(out[2], programs))
+    jobdesc <- h%>%html_element("body")%>%html_elements("ul")%>%html_elements(".description__job-criteria-item")%>%html_nodes("span")%>%html_text()
+    sl <- unlist(regmatches(jobdesc[1], gregexpr("\\b\\w{3,}.", jobdesc[1], perl=TRUE)))
+    df[i,"Seniority Level"] <- ifelse (length(sl)>1, paste(sl, collapse=""), sl)
+    df[i,"Industry"] <- paste(unlist(regmatches(jobdesc[4], gregexpr("\\b\\w{3,}.", jobdesc[4], perl=TRUE))), collapse="")
+ }
+
+ df[1:length(links), "Term Searched"] <- Term.Searched
+ df[1:length(links), "Country"] <- country
+
+ ## Close the Server Connection:
+ remDr$close()
+ return(df)
+}
+
+
+## Examples:
+# my.data <- linkedin.search("England", "Data Scientist")
+# my.data.1 <- linkedin.search("England", "Statistician")
+# my.data <- rbind(my.data, my.data.1)
+#
+# my.data.1 <- linkedin.search("England", "Data Analyst")
+# my.data <- rbind(my.data, my.data.1)
+#
+# my.data.1 <- linkedin.search("Norway", "Data Scientist")
+# my.data <- rbind(my.data, my.data.1)
