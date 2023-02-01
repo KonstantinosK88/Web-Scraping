@@ -13,7 +13,14 @@
 ## HTTP error 429: A security measure for preventing brute force
 ## attacks. Stop what you are doing and wait 1-2 hours, to reset
 ## the timer, or simply reset the router and get a new IP that
-## will give you access once more.
+## will give you access once more. Or insert the following commands
+## in your cmd:
+## netsh winsock reset
+## netsh int ip reset
+## ipconfig /release
+## ipconfig /renew
+## ipconfig /flushdns
+##
 ##
 ## HTTP error 500: Restart Docker image and you are golden. :)
 #######################################################################
