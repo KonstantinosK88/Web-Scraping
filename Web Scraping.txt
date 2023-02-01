@@ -47,9 +47,6 @@ library(XML)
 ## The Maximum Number of jobs per term searched per country will be 150
 ## because scrolling down stops at 150.
 #######################################################################
-## Select the Country and the Search Term:
-country <- "England"
-Term.Searched <- "Data Scientist"
 
 linkedin.search <- function(country, Term.Searched){
 
